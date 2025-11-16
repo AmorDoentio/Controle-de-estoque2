@@ -5,16 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Estoque - Dashboard</title>
     
+    <!-- Carrega o Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Link para o arquivo CSS customizado (ESSENCIAL PARA OS MODAIS) -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-100 font-sans">
     <div class="flex h-screen">
         
+        <!-- Barra Lateral de Navegação (Sidebar) -->
         <nav class="w-64 bg-slate-900 text-slate-200 flex flex-col p-4 shadow-lg">
+            <!-- Título da Barra Lateral -->
             <h1 class="text-2xl font-bold mb-8 text-white text-center">Impacto Multimarcas</h1>
             
+            <!-- Links de Navegação -->
             <ul class="flex flex-col space-y-2">
                 <li>
                     <a href="#" class="nav-link active flex items-center p-3 rounded-lg hover:bg-slate-700 transition-colors" data-page="page-1">
@@ -42,6 +47,7 @@
                 </li>
             </ul>
             
+            <!-- Link de Conta (posicionado no final) -->
             <ul class="mt-auto">
                  <li>
                     <a href="#" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-700 transition-colors" data-page="page-5">
@@ -52,26 +58,35 @@
             </ul>
         </nav>
 
+        <!-- Área de Conteúdo Principal -->
         <main class="flex-1 p-8 overflow-y-auto">
 
+            <!-- ======================= -->
+            <!-- PÁGINA 1: DASHBOARD     -->
+            <!-- ======================= -->
             <div id="page-1" class="page-content">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Dashboard</h2>
                 
+                <!-- Cards de Resumo -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
                         <h3 class="text-lg font-semibold text-slate-600">Produtos com Baixo Estoque</h3>
+                        <!-- Este card ainda é estático, podemos implementar depois -->
                         <p class="text-4xl font-bold mt-2 text-red-500">20%</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
                         <h3 class="text-lg font-semibold text-slate-600">Itens em Estoque</h3>
+                        <!-- ID para atualização via JS -->
                         <p id="dashboardTotalItems" class="text-4xl font-bold mt-2 text-blue-500">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
                         <h3 class="text-lg font-semibold text-slate-600">Valor em Mercadorias</h3>
+                        <!-- ID para atualização via JS -->
                         <p id="dashboardTotalValue" class="text-4xl font-bold mt-2 text-green-500">R$ 0,00</p>
                     </div>
                 </div>
 
+                <!-- Gráficos (Placeholder) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold text-slate-700 mb-4">Entradas vs Saídas (Placeholder)</h3>
@@ -84,9 +99,13 @@
                 </div>
             </div>
 
+            <!-- ======================= -->
+            <!-- PÁGINA 2: PRODUTOS      -->
+            <!-- ======================= -->
             <div id="page-2" class="page-content hidden">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Produtos</h2>
                 
+                <!-- Barra de Ações (Procurar e Adicionar) -->
                 <div class="flex justify-between items-center mb-6">
                     <input type="text" id="productSearchInput" placeholder="Procurar produto..." class="p-2 border border-slate-300 rounded-lg shadow-sm w-1/3">
                     <button id="openProductModalBtn" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
@@ -94,6 +113,7 @@
                     </button>
                 </div>
 
+                <!-- Tabela de Produtos -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-100">
@@ -114,12 +134,18 @@
                 </div>
             </div>
 
+            <!-- ======================= -->
+            <!-- PÁGINA 3: ESTOQUE       -->
+            <!-- ======================= -->
             <div id="page-3" class="page-content hidden">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Estoque</h2>
                 
+                <!-- Barra de Ações (Entrada, Saída, Procurar) -->
                 <div class="flex justify-between items-center mb-6">
+                    <!-- A busca de estoque ainda não foi implementada -->
                     <input type="text" id="stockSearchInput" placeholder="Procurar no estoque..." class="p-2 border border-slate-300 rounded-lg shadow-sm w-1/3">
                     <div>
+                        <!-- IDs para os botões -->
                         <button id="openEntryModalBtn" class="bg-green-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors mr-2">
                             Registrar Entrada
                         </button>
@@ -129,6 +155,7 @@
                     </div>
                 </div>
 
+                <!-- Tabela de Estoque -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-100">
@@ -136,7 +163,7 @@
                                 <th class="p-4 font-semibold text-slate-600">Nome</th>
                                 <th class="p-4 font-semibold text-slate-600">Quantidade Atual</th>
                                 <th class="p-4 font-semibold text-slate-600">Tamanho</th>
-                                <th class_tx="p-4 font-semibold text-slate-600">Categoria</th>
+                                <th class="p-4 font-semibold text-slate-600">Categoria</th>
                             </tr>
                         </thead>
                         <tbody id="stockTableBody" class="divide-y divide-slate-200">
@@ -148,6 +175,9 @@
                 </div>
             </div>
 
+            <!-- ======================= -->
+            <!-- PÁGINA 4: RELATÓRIOS    -->
+            <!-- ======================= -->
             <div id="page-4" class="page-content hidden">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Relatórios</h2>
                 
@@ -185,6 +215,7 @@
                     </table>
                 </div>
 
+                <!-- Resultado da Análise da IA -->
                 <div id="reportAnalysisContainer" class="mt-6 hidden">
                     <h3 class="text-xl font-semibold text-slate-700 mb-4">Insights da IA</h3>
                     <div id="reportAnalysisLoading" class="loading-spinner hidden"></div>
@@ -193,6 +224,9 @@
                 </div>
             </div>
 
+            <!-- ======================= -->
+            <!-- PÁGINA 5: CONTA         -->
+            <!-- ======================= -->
             <div id="page-5" class="page-content hidden">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Conta / Configurações</h2>
                 
@@ -221,11 +255,16 @@
         </main>
     </div>
 
+    <!-- ================================== -->
+    <!-- MODAL - ADICIONAR NOVO PRODUTO   -->
+    <!-- ================================== -->
     <div id="productModal" class="modal-overlay hidden">
-        <div class="modal-content bg-white p-8 rounded-lg shadow-2xl w-full max-w-3xl"> <h2 class="text-2xl font-bold text-slate-800 mb-6">Adicionar Novo Produto</h2>
+        <div class="modal-content bg-white p-8 rounded-lg shadow-2xl w-full max-w-3xl"> <!-- Aumentado para max-w-3xl -->
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Adicionar Novo Produto</h2>
             
             <form id="productForm">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Coluna da Esquerda (Informações Básicas) -->
                     <div class="space-y-4">
                         <div>
                             <label for="prodName" class="block text-sm font-medium text-slate-700">Nome do Produto</label>
@@ -243,6 +282,7 @@
                             <label for="prodObject" class="block text-sm font-medium text-slate-700">Objeto</label>
                             <input type="text" id="prodObject" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg shadow-sm" required>
                         </div>
+                        <!-- NOVOS CAMPOS: Preço e Quantidade -->
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label for="prodPrice" class="block text-sm font-medium text-slate-700">Preço (R$)</label>
@@ -255,6 +295,7 @@
                         </div>
                     </div>
                     
+                    <!-- Coluna da Direita (Descrição com IA) -->
                     <div class="space-y-4">
                         <div>
                             <div class="flex justify-between items-center">
@@ -263,6 +304,7 @@
                                     ✨ Gerar com IA
                                 </button>
                             </div>
+                            <!-- Aumentado para 12 linhas -->
                             <textarea id="prodDescription" rows="12" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg shadow-sm"></textarea>
                             <div id="descLoading" class="loading-spinner small hidden mt-2"></div>
                             <p id="descError" class="text-red-500 text-sm mt-1"></p>
@@ -270,6 +312,7 @@
                     </div>
                 </div>
                 
+                <!-- Botões do Formulário -->
                 <div class="flex justify-end gap-4 mt-8">
                     <button type="button" id="cancelModalBtn" class="bg-slate-200 text-slate-800 px-5 py-2 rounded-lg shadow-md hover:bg-slate-300 transition-colors">
                         Cancelar
@@ -282,19 +325,26 @@
         </div>
     </div>
 
+    <!-- ================================== -->
+    <!-- NOVO MODAL - MOVIMENTAR ESTOQUE  -->
+    <!-- ================================== -->
     <div id="stockMovementModal" class="modal-overlay hidden">
         <div class="modal-content bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
+            <!-- O Título será alterado via JS -->
             <h2 class="text-2xl font-bold text-slate-800 mb-6">Registrar Movimentação</h2>
             
             <form id="stockMovementForm">
+                <!-- Input oculto para saber se é 'entrada' ou 'saida' -->
                 <input type="hidden" id="movementTypeInput" value="entrada">
 
                 <div class="space-y-4">
                     <div>
                         <label for="movementProductSelect" class="block text-sm font-medium text-slate-700">Produto</label>
+                        <!-- Este select será populado via JS -->
                         <select id="movementProductSelect" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg shadow-sm" required>
                             <option value="">Selecione um produto...</option>
-                            </select>
+                            <!-- Opções adicionadas via JS -->
+                        </select>
                     </div>
                     <div>
                         <label for="movementQuantityInput" class="block text-sm font-medium text-slate-700">Quantidade</label>
@@ -302,10 +352,12 @@
                     </div>
                 </div>
                 
+                <!-- Botões do Formulário -->
                 <div class="flex justify-end gap-4 mt-8">
                     <button type="button" id="cancelMovementModalBtn" class="bg-slate-200 text-slate-800 px-5 py-2 rounded-lg shadow-md hover:bg-slate-300 transition-colors">
                         Cancelar
                     </button>
+                    <!-- O botão de submit muda de cor (verde/vermelho) via JS -->
                     <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
                         Salvar Movimentação
                     </button>
@@ -314,6 +366,9 @@
         </div>
     </div>
 
+    <!-- 
+      Script JavaScript separado e com tipo "module" para o Firebase.
+    -->
     <script src="script.js" type="module" defer></script>
 </body>
 </html>
