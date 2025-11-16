@@ -1,4 +1,3 @@
-//javascript:Lógica do Aplicativo (Estoque):script.js
 // --- Importações do Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
