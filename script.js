@@ -5,12 +5,13 @@ let localMovements = []; // Array local para simular os relatórios
 // --- Seletores do DOM ---
 let navLinks, pages;
 // Modais
-let productModal, stockMovementModal;
+let productModal, stockMovementModal, deleteConfirmModal; // NOVO
 // Botões
 let openProductModalBtn, cancelProductModalBtn;
 let openEntryModalBtn, openExitModalBtn, cancelMovementModalBtn;
+let cancelDeleteBtn; // NOVO
 // Formulários
-let productForm, stockMovementForm;
+let productForm, stockMovementForm, deleteConfirmForm; // NOVO
 // Tabelas
 let productTableBody, stockTableBody;
 // Inputs
@@ -38,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     productForm = document.getElementById('productForm');
     productTableBody = document.getElementById('productTableBody');
     productSearchInput = document.getElementById('productSearchInput');
-    prodObjectSelect = document.getElementById('prodObject'); // Para formulário dinâmico
-    prodSizeSelect = document.getElementById('prodSize'); // Para formulário dinâmico
+    prodObjectSelect = document.getElementById('prodObject');
+    prodSizeSelect = document.getElementById('prodSize');
 
     // --- Página 3 (Estoque) ---
     stockTableBody = document.getElementById('stockTableBody');
@@ -48,6 +49,19 @@ document.addEventListener('DOMContentLoaded', () => {
     openExitModalBtn = document.getElementById('openExitModalBtn');
     cancelMovementModalBtn = document.getElementById('cancelMovementModalBtn');
     stockMovementForm = document.getElementById('stockMovementForm');
+
+    // --- Página 5 (Conta) ---
+    // Adiciona listeners para os botões da conta
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if(changePasswordBtn) changePasswordBtn.addEventListener('click', () => showToast('Função "Trocar Senha" ainda não implementada.', 'error'));
+    if(logoutBtn) logoutBtn.addEventListener('click', () => showToast('Função "Trocar Usuário" ainda não implementada.', 'error'));
+
+
+    // --- NOVO: Modal de Exclusão ---
+    deleteConfirmModal = document.getElementById('deleteConfirmModal');
+    deleteConfirmForm = document.getElementById('deleteConfirmForm');
+    cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 
     // --- LÓGICA DE NAVEGAÇÃO ---
     setupNavigation();
@@ -76,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Funções de Configuração ---
 
 function setupNavigation() {
+    // ... (código sem alterações) ...
     if (navLinks && pages) {
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -99,7 +114,7 @@ function setupModalLogic() {
     if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', () => {
         closeModal(productModal);
         productForm.reset(); 
-        resetDynamicForm(); // Reseta o formulário dinâmico
+        resetDynamicForm(); 
     });
     if (productModal) productModal.addEventListener('click', (e) => {
         if (e.target === productModal) {
@@ -122,35 +137,42 @@ function setupModalLogic() {
             stockMovementForm.reset();
         }
     });
+
+    // NOVO: Modal de Confirmação de Exclusão
+    if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', () => {
+        closeModal(deleteConfirmModal);
+        deleteConfirmForm.reset();
+    });
+    if (deleteConfirmModal) deleteConfirmModal.addEventListener('click', (e) => {
+        if (e.target === deleteConfirmModal) {
+            closeModal(deleteConfirmModal);
+            deleteConfirmForm.reset();
+        }
+    });
 }
 
 /**
  * Lógica da Página 2 (Produtos)
  */
 function setupProductLogic() {
-    // Salvar novo produto (simulado com array local)
+    // Salvar novo produto
     if (productForm) {
         productForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            // Pega os valores do formulário
             const newProduct = {
-                id: crypto.randomUUID(), // Gera um ID único
+                id: crypto.randomUUID(), 
                 name: document.getElementById('prodName').value,
-                sexo: document.getElementById('prodSexo').value, // Alterado
-                object: document.getElementById('prodObject').value, // Alterado
-                size: document.getElementById('prodSize').value, // Alterado
+                sexo: document.getElementById('prodSexo').value, 
+                object: document.getElementById('prodObject').value, 
+                size: document.getElementById('prodSize').value, 
                 price: parseFloat(document.getElementById('prodPrice').value) || 0,
                 quantity: parseInt(document.getElementById('prodQuantity').value) || 0,
                 createdAt: new Date()
             };
 
-            console.log("Novo produto salvo (simulado):", newProduct);
-            
-            // Adiciona ao array local
             localProducts.push(newProduct);
             
-            // Re-renderiza tudo
             renderProductTable(localProducts);
             renderStockTable(localProducts);
             updateDashboard(localProducts);
@@ -158,39 +180,71 @@ function setupProductLogic() {
             closeModal(productModal);
             productForm.reset();
             resetDynamicForm();
+            
+            showToast('Produto adicionado com sucesso!', 'success'); // NOVO: Toast
         });
     }
 
-    // Busca de produto (funciona no array local)
+    // Busca de produto
     if (productSearchInput) {
+        // ... (código sem alterações) ...
         productSearchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredProducts = localProducts.filter(product =>
                 product.name.toLowerCase().includes(searchTerm) ||
-                product.sexo.toLowerCase().includes(searchTerm) || // Alterado
-                product.object.toLowerCase().includes(searchTerm) // Alterado
+                product.sexo.toLowerCase().includes(searchTerm) || 
+                product.object.toLowerCase().includes(searchTerm) 
             );
             renderProductTable(filteredProducts);
         });
     }
 
-    // Excluir produto (do array local)
+    // Excluir produto (Agora abre o modal de senha)
     if (productTableBody) {
         productTableBody.addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-btn')) {
                 const id = e.target.getAttribute('data-id');
-                if (confirm('Tem certeza que deseja excluir este produto?')) {
-                    
-                    console.log("Excluir produto (simulado):", id);
-                    
-                    // Remove do array local
-                    localProducts = localProducts.filter(p => p.id !== id);
-
-                    // Re-renderiza tudo
-                    renderProductTable(localProducts);
-                    renderStockTable(localProducts);
-                    updateDashboard(localProducts);
+                
+                // NOVO: Abre o modal de confirmação em vez do confirm()
+                const product = localProducts.find(p => p.id === id);
+                if (product) {
+                    // Preenche o modal com a informação
+                    document.getElementById('deleteProductId').value = id;
+                    // Limpa o campo de senha
+                    document.getElementById('deletePasswordInput').value = '';
+                    openModal(deleteConfirmModal);
                 }
+            }
+        });
+    }
+
+    // NOVO: Handle do formulário de exclusão
+    if (deleteConfirmForm) {
+        deleteConfirmForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('deleteProductId').value;
+            const password = document.getElementById('deletePasswordInput').value;
+
+            // --- PONTO DE SEGURANÇA ---
+            // A senha está "chumbada" (hardcoded) como '123'
+            // Quando você tiver um banco de dados de usuários, verifique a senha real aqui.
+            if (password === '123') {
+                // Senha correta, exclui o produto
+                localProducts = localProducts.filter(p => p.id !== id);
+
+                // Re-renderiza tudo
+                renderProductTable(localProducts);
+                renderStockTable(localProducts);
+                updateDashboard(localProducts);
+
+                closeModal(deleteConfirmModal);
+                deleteConfirmForm.reset();
+                
+                showToast('Produto excluído com sucesso!', 'success');
+            } else {
+                // Senha incorreta
+                showToast('Senha incorreta!', 'error');
             }
         });
     }
@@ -200,7 +254,7 @@ function setupProductLogic() {
  * Lógica da Página 3 (Estoque)
  */
 function setupStockLogic() {
-    // Salvar movimentação de estoque (simulado com array local)
+    // Salvar movimentação de estoque
     if (stockMovementForm) {
         stockMovementForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -211,17 +265,18 @@ function setupStockLogic() {
             const submitButton = stockMovementForm.querySelector('button[type="submit"]');
 
             if (!productId || !quantity || quantity <= 0) {
-                alert("Por favor, selecione um produto e insira uma quantidade válida.");
+                // NOVO: Substitui alert() por showToast()
+                showToast('Selecione um produto e uma quantidade válida.', 'error');
                 return;
             }
 
             submitButton.disabled = true;
             submitButton.textContent = "Salvando...";
             
-            // Encontra o produto no array local
             const product = localProducts.find(p => p.id === productId);
             if (!product) {
-                 alert("Erro: Produto não encontrado.");
+                 // NOVO: Substitui alert() por showToast()
+                 showToast('Erro: Produto não encontrado.', 'error');
                  submitButton.disabled = false;
                  submitButton.textContent = "Salvar Movimentação";
                  return;
@@ -233,19 +288,18 @@ function setupStockLogic() {
             } else {
                 newQuantity = product.quantity - quantity;
                 if (newQuantity < 0) {
-                    alert('Operação cancelada. O estoque não pode ficar negativo.');
+                    // NOVO: Substitui alert() por showToast()
+                    showToast('Operação cancelada. O estoque não pode ficar negativo.', 'error');
                     submitButton.disabled = false;
                     submitButton.textContent = "Salvar Movimentação";
                     return;
                 }
             }
 
-            // Atualiza o produto no array local
+            // Atualiza o produto
             product.quantity = newQuantity;
 
-            console.log("Movimentação salva (simulado):", {productId, type, quantity, newQuantity});
-            
-            // Simula o registro de movimento (para o futuro relatório)
+            // Adiciona ao relatório
             const newMovement = {
                 productName: product.name,
                 quantityChanged: quantity,
@@ -257,16 +311,18 @@ function setupStockLogic() {
             console.log("Novo movimento:", newMovement);
 
 
-            // Re-renderiza as tabelas
+            // Re-renderiza
             renderStockTable(localProducts);
             updateDashboard(localProducts);
-            // renderReportTable(localMovements); // Podemos ativar isso no futuro
 
             setTimeout(() => { // Simula o tempo de salvar
                 closeModal(stockMovementModal);
                 stockMovementForm.reset();
                 submitButton.disabled = false;
                 submitButton.textContent = "Salvar Movimentação";
+                
+                // NOVO: Toast
+                showToast('Movimentação registrada com sucesso!', 'success');
             }, 500);
         });
     }
@@ -276,6 +332,7 @@ function setupStockLogic() {
  * LÓGICA NOVA: Controla o formulário dinâmico de Objeto/Tamanho
  */
 function setupDynamicFormLogic() {
+    // ... (código sem alterações) ...
     if (prodObjectSelect) {
         prodObjectSelect.addEventListener('change', () => {
             const selection = prodObjectSelect.value;
@@ -309,6 +366,7 @@ function setupDynamicFormLogic() {
 // --- Funções de Renderização (Helpers) ---
 
 function renderProductTable(products) {
+    // ... (código sem alterações) ...
     if (!productTableBody) return;
     productTableBody.innerHTML = '';
     
@@ -335,6 +393,7 @@ function renderProductTable(products) {
 }
 
 function renderStockTable(products) {
+    // ... (código sem alterações) ...
     if (!stockTableBody) return;
     stockTableBody.innerHTML = '';
     
@@ -358,6 +417,7 @@ function renderStockTable(products) {
 }
 
 function populateProductSelect(products) {
+    // ... (código sem alterações) ...
     const select = document.getElementById('movementProductSelect');
     if (!select) return;
     
@@ -375,6 +435,7 @@ function populateProductSelect(products) {
 }
 
 function updateDashboard(products) {
+    // ... (código sem alterações) ...
     if (!dashboardTotalItems || !dashboardTotalValue) return;
 
     const totalItems = products.reduce((sum, p) => sum + (p.quantity || 0), 0);
@@ -388,18 +449,21 @@ function updateDashboard(products) {
 }
 
 function openModal(modalElement) {
+    // ... (código sem alterações) ...
     if (!modalElement) return;
     modalElement.classList.remove('hidden');
     setTimeout(() => modalElement.classList.add('open'), 10); 
 }
 
 function closeModal(modalElement) {
+    // ... (código sem alterações) ...
     if (!modalElement) return;
     modalElement.classList.remove('open');
     setTimeout(() => modalElement.classList.add('hidden'), 300);
 }
 
 function openMovementModal(type) {
+    // ... (código sem alterações) ...
     if (!stockMovementModal) return;
     
     const title = stockMovementModal.querySelector('h2');
@@ -421,10 +485,8 @@ function openMovementModal(type) {
     openModal(stockMovementModal);
 }
 
-/**
- * Reseta o formulário dinâmico para o estado inicial
- */
 function resetDynamicForm() {
+    // ... (código sem alterações) ...
     if (prodSizeSelect) {
         prodSizeSelect.innerHTML = '<option value="">Selecione um objeto primeiro</option>';
         prodSizeSelect.disabled = true;
@@ -435,12 +497,8 @@ function resetDynamicForm() {
 }
 
 // --- Funções de Simulação (IA) ---
-// (Estas funções não precisam de banco de dados e permanecem iguais)
-
 function setupIASimulations() {
-    // Lógica do botão "Gerar com IA" foi REMOVIDA
-    
-    // Botão "Analisar Relatório com IA"
+    // ... (código sem alterações) ...
     const analyzeReportBtn = document.getElementById('analyzeReportBtn');
     const reportContainer = document.getElementById('reportAnalysisContainer');
     const reportLoading = document.getElementById('reportAnalysisLoading');
@@ -448,14 +506,13 @@ function setupIASimulations() {
 
     if (analyzeReportBtn) {
         analyzeReportBtn.addEventListener('click', () => {
-            if (reportContainer) reportContainer.classList.remove('hidden'); // Corrigido 'remover' para 'remove'
-            if (reportLoading) reportLoading.classList.remove('hidden'); // Corrigido 'remover' para 'remove'
+            if (reportContainer) reportContainer.classList.remove('hidden'); 
+            if (reportLoading) reportLoading.classList.remove('hidden'); 
             if (reportResult) reportResult.innerHTML = "";
             analyzeReportBtn.disabled = true;
 
             setTimeout(() => {
                 if (reportResult) {
-                    // Esta parte ainda é simulada.
                     reportResult.innerHTML = `
                         <p><strong>Análise de Tendências (Simulada):</strong></p>
                         <ul>
@@ -470,4 +527,24 @@ function setupIASimulations() {
             }, 2000);
         });
     }
+}
+
+
+// ==================================
+// NOVA FUNÇÃO: Mostrar Notificação (Toast)
+// ==================================
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+
+    container.appendChild(toast);
+
+    // Remove o toast após 3 segundos
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
