@@ -1,5 +1,6 @@
 // --- Variáveis Globais do App ---
 let localProducts = []; // Array local para simular o banco de dados
+let localMovements = []; // Array local para simular os relatórios
 
 // --- Seletores do DOM ---
 let navLinks, pages;
@@ -139,7 +140,6 @@ function setupProductLogic() {
                 sexo: document.getElementById('prodSexo').value, // Alterado
                 object: document.getElementById('prodObject').value, // Alterado
                 size: document.getElementById('prodSize').value, // Alterado
-                description: document.getElementById('prodDescription').value,
                 price: parseFloat(document.getElementById('prodPrice').value) || 0,
                 quantity: parseInt(document.getElementById('prodQuantity').value) || 0,
                 createdAt: new Date()
@@ -222,6 +222,8 @@ function setupStockLogic() {
             const product = localProducts.find(p => p.id === productId);
             if (!product) {
                  alert("Erro: Produto não encontrado.");
+                 submitButton.disabled = false;
+                 submitButton.textContent = "Salvar Movimentação";
                  return;
             }
 
@@ -244,17 +246,21 @@ function setupStockLogic() {
             console.log("Movimentação salva (simulado):", {productId, type, quantity, newQuantity});
             
             // Simula o registro de movimento (para o futuro relatório)
-            console.log("Novo movimento:", {
+            const newMovement = {
                 productName: product.name,
                 quantityChanged: quantity,
                 newQuantity: newQuantity,
                 type: type,
                 date: new Date()
-            });
+            };
+            localMovements.push(newMovement);
+            console.log("Novo movimento:", newMovement);
+
 
             // Re-renderiza as tabelas
             renderStockTable(localProducts);
             updateDashboard(localProducts);
+            // renderReportTable(localMovements); // Podemos ativar isso no futuro
 
             setTimeout(() => { // Simula o tempo de salvar
                 closeModal(stockMovementModal);
@@ -423,30 +429,18 @@ function resetDynamicForm() {
         prodSizeSelect.innerHTML = '<option value="">Selecione um objeto primeiro</option>';
         prodSizeSelect.disabled = true;
     }
+    if (prodObjectSelect) {
+        prodObjectSelect.value = ""; // Reseta o select de objeto
+    }
 }
 
 // --- Funções de Simulação (IA) ---
 // (Estas funções não precisam de banco de dados e permanecem iguais)
 
 function setupIASimulations() {
-    const generateDescBtn = document.getElementById('generateDescBtn');
-    const descLoading = document.getElementById('descLoading');
-    const prodDescription = document.getElementById('prodDescription');
+    // Lógica do botão "Gerar com IA" foi REMOVIDA
     
-    if (generateDescBtn) {
-        generateDescBtn.addEventListener('click', () => {
-            if (descLoading) descLoading.classList.remove('hidden');
-            generateDescBtn.disabled = true;
-            if (prodDescription) prodDescription.value = "Gerando descrição com IA...";
-
-            setTimeout(() => {
-                if (prodDescription) prodDescription.value = "Uma fantástica camisa de algodão premium, perfeita para qualquer ocasião. (Descrição gerada pela IA)";
-                if (descLoading) descLoading.classList.add('hidden');
-                generateDescBtn.disabled = false;
-            }, 1500);
-        });
-    }
-
+    // Botão "Analisar Relatório com IA"
     const analyzeReportBtn = document.getElementById('analyzeReportBtn');
     const reportContainer = document.getElementById('reportAnalysisContainer');
     const reportLoading = document.getElementById('reportAnalysisLoading');
@@ -454,8 +448,8 @@ function setupIASimulations() {
 
     if (analyzeReportBtn) {
         analyzeReportBtn.addEventListener('click', () => {
-            if (reportContainer) reportContainer.classList.remove('hidden');
-            if (reportLoading) reportLoading.classList.remove('hidden');
+            if (reportContainer) reportContainer.classList.remove('hidden'); // Corrigido 'remover' para 'remove'
+            if (reportLoading) reportLoading.classList.remove('hidden'); // Corrigido 'remover' para 'remove'
             if (reportResult) reportResult.innerHTML = "";
             analyzeReportBtn.disabled = true;
 
