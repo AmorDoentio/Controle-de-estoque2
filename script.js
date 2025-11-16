@@ -1,27 +1,5 @@
-// --- Importações do Firebase ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { 
-    getFirestore, 
-    setLogLevel, 
-    collection, 
-    addDoc, 
-    onSnapshot, 
-    doc, 
-    deleteDoc, 
-    query,
-    writeBatch, // Importa o writeBatch para transações
-    getDoc // Importa getDoc para ler um doc
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// --- Configuração do Firebase ---
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
 // --- Variáveis Globais do App ---
-let app, auth, db, userId, productsCollectionRef, movementsCollectionRef;
-let localProducts = []; // Cache local de produtos
+let localProducts = []; // Array local para simular o banco de dados
 
 // --- Seletores do DOM ---
 let navLinks, pages;
@@ -38,6 +16,8 @@ let productTableBody, stockTableBody;
 let productSearchInput;
 // Dashboard Cards
 let dashboardTotalItems, dashboardTotalValue;
+// Seletores dinâmicos do formulário de produto
+let prodObjectSelect, prodSizeSelect;
 
 // --- Inicialização do App ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -57,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     productForm = document.getElementById('productForm');
     productTableBody = document.getElementById('productTableBody');
     productSearchInput = document.getElementById('productSearchInput');
+    prodObjectSelect = document.getElementById('prodObject'); // Para formulário dinâmico
+    prodSizeSelect = document.getElementById('prodSize'); // Para formulário dinâmico
 
     // --- Página 3 (Estoque) ---
     stockTableBody = document.getElementById('stockTableBody');
@@ -65,19 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     openExitModalBtn = document.getElementById('openExitModalBtn');
     cancelMovementModalBtn = document.getElementById('cancelMovementModalBtn');
     stockMovementForm = document.getElementById('stockMovementForm');
-
-    // Inicializa o Firebase
-    try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        setLogLevel('Debug');
-        console.log("Firebase inicializado com sucesso!");
-        handleAuthentication();
-    } catch (e) {
-        console.error("Erro ao iniciar o Firebase:", e);
-        if(productTableBody) productTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Erro ao conectar ao banco de dados.</td></tr>';
-    }
 
     // --- LÓGICA DE NAVEGAÇÃO ---
     setupNavigation();
@@ -93,6 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE ESTOQUE (Página 3) ---
     setupStockLogic();
+
+    // --- LÓGICA DO FORMULÁRIO DINÂMICO ---
+    setupDynamicFormLogic();
+
+    // --- INICIALIZA AS TABELAS (VAZIAS) ---
+    renderProductTable(localProducts);
+    renderStockTable(localProducts);
+    updateDashboard(localProducts);
 });
 
 // --- Funções de Configuração ---
@@ -120,12 +97,14 @@ function setupModalLogic() {
     if (openProductModalBtn) openProductModalBtn.addEventListener('click', () => openModal(productModal));
     if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', () => {
         closeModal(productModal);
-        productForm.reset(); // Limpa o formulário ao cancelar
+        productForm.reset(); 
+        resetDynamicForm(); // Reseta o formulário dinâmico
     });
     if (productModal) productModal.addEventListener('click', (e) => {
         if (e.target === productModal) {
             closeModal(productModal);
             productForm.reset();
+            resetDynamicForm();
         }
     });
 
@@ -144,72 +123,86 @@ function setupModalLogic() {
     });
 }
 
+/**
+ * Lógica da Página 2 (Produtos)
+ */
 function setupProductLogic() {
-    // Salvar novo produto
+    // Salvar novo produto (simulado com array local)
     if (productForm) {
-        productForm.addEventListener('submit', async (e) => {
+        productForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
+            // Pega os valores do formulário
             const newProduct = {
+                id: crypto.randomUUID(), // Gera um ID único
                 name: document.getElementById('prodName').value,
-                category: document.getElementById('prodCategory').value,
-                size: document.getElementById('prodSize').value,
-                object: document.getElementById('prodObject').value,
+                sexo: document.getElementById('prodSexo').value, // Alterado
+                object: document.getElementById('prodObject').value, // Alterado
+                size: document.getElementById('prodSize').value, // Alterado
                 description: document.getElementById('prodDescription').value,
-                price: parseFloat(document.getElementById('prodPrice').value) || 0, // Novo
-                quantity: parseInt(document.getElementById('prodQuantity').value) || 0, // Novo
+                price: parseFloat(document.getElementById('prodPrice').value) || 0,
+                quantity: parseInt(document.getElementById('prodQuantity').value) || 0,
                 createdAt: new Date()
             };
 
-            try {
-                await addDoc(productsCollectionRef, newProduct);
-                console.log('Produto salvo com sucesso!');
-                closeModal(productModal);
-                productForm.reset();
-            } catch (error) {
-                console.error("Erro ao salvar produto:", error);
-            }
+            console.log("Novo produto salvo (simulado):", newProduct);
+            
+            // Adiciona ao array local
+            localProducts.push(newProduct);
+            
+            // Re-renderiza tudo
+            renderProductTable(localProducts);
+            renderStockTable(localProducts);
+            updateDashboard(localProducts);
+
+            closeModal(productModal);
+            productForm.reset();
+            resetDynamicForm();
         });
     }
 
-    // Busca de produto
+    // Busca de produto (funciona no array local)
     if (productSearchInput) {
         productSearchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredProducts = localProducts.filter(product =>
                 product.name.toLowerCase().includes(searchTerm) ||
-                product.category.toLowerCase().includes(searchTerm) ||
-                product.object.toLowerCase().includes(searchTerm)
+                product.sexo.toLowerCase().includes(searchTerm) || // Alterado
+                product.object.toLowerCase().includes(searchTerm) // Alterado
             );
             renderProductTable(filteredProducts);
         });
     }
 
-    // Excluir produto
+    // Excluir produto (do array local)
     if (productTableBody) {
-        productTableBody.addEventListener('click', async (e) => {
+        productTableBody.addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-btn')) {
                 const id = e.target.getAttribute('data-id');
-                // Adicionar confirmação
-                if (confirm('Tem certeza que deseja excluir este produto? Isso não pode ser desfeito.')) {
-                    try {
-                        const docRef = doc(db, productsCollectionRef.path, id);
-                        await deleteDoc(docRef);
-                        console.log("Produto excluído!");
-                        // A tabela será atualizada automaticamente pelo onSnapshot
-                    } catch (error) {
-                        console.error("Erro ao excluir produto:", error);
-                    }
+                if (confirm('Tem certeza que deseja excluir este produto?')) {
+                    
+                    console.log("Excluir produto (simulado):", id);
+                    
+                    // Remove do array local
+                    localProducts = localProducts.filter(p => p.id !== id);
+
+                    // Re-renderiza tudo
+                    renderProductTable(localProducts);
+                    renderStockTable(localProducts);
+                    updateDashboard(localProducts);
                 }
             }
         });
     }
 }
 
+/**
+ * Lógica da Página 3 (Estoque)
+ */
 function setupStockLogic() {
-    // Salvar movimentação de estoque
+    // Salvar movimentação de estoque (simulado com array local)
     if (stockMovementForm) {
-        stockMovementForm.addEventListener('submit', async (e) => {
+        stockMovementForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
             const productId = document.getElementById('movementProductSelect').value;
@@ -222,136 +215,89 @@ function setupStockLogic() {
                 return;
             }
 
-            submitButton.disabled = true; // Desabilita o botão para evitar cliques duplos
+            submitButton.disabled = true;
             submitButton.textContent = "Salvando...";
+            
+            // Encontra o produto no array local
+            const product = localProducts.find(p => p.id === productId);
+            if (!product) {
+                 alert("Erro: Produto não encontrado.");
+                 return;
+            }
 
-            // Pega a referência do documento do produto
-            const productRef = doc(db, productsCollectionRef.path, productId);
-
-            try {
-                // Precisamos ler o produto *exatamente* neste momento para evitar erros de concorrência
-                // Em um app maior, usaríamos uma "Transação" do Firebase.
-                // Por simplicidade, vamos usar um Batch Write e assumir que o cache 'localProducts' está ok.
-                
-                const product = localProducts.find(p => p.id === productId);
-                if (!product) throw new Error("Produto não encontrado no cache local.");
-
-                let newQuantity;
-                if (type === 'entrada') {
-                    newQuantity = product.quantity + quantity;
-                } else {
-                    newQuantity = product.quantity - quantity;
-                    if (newQuantity < 0) {
-                        alert('Operação cancelada. O estoque não pode ficar negativo.');
-                        submitButton.disabled = false;
-                        submitButton.textContent = "Salvar Movimentação";
-                        return;
-                    }
+            let newQuantity;
+            if (type === 'entrada') {
+                newQuantity = product.quantity + quantity;
+            } else {
+                newQuantity = product.quantity - quantity;
+                if (newQuantity < 0) {
+                    alert('Operação cancelada. O estoque não pode ficar negativo.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Salvar Movimentação";
+                    return;
                 }
+            }
 
-                // Usar um Batch Write para garantir que ambas as operações funcionem
-                const batch = writeBatch(db);
+            // Atualiza o produto no array local
+            product.quantity = newQuantity;
 
-                // 1. Atualiza a quantidade na coleção 'products'
-                batch.update(productRef, { quantity: newQuantity });
+            console.log("Movimentação salva (simulado):", {productId, type, quantity, newQuantity});
+            
+            // Simula o registro de movimento (para o futuro relatório)
+            console.log("Novo movimento:", {
+                productName: product.name,
+                quantityChanged: quantity,
+                newQuantity: newQuantity,
+                type: type,
+                date: new Date()
+            });
 
-                // 2. Registra o movimento na coleção 'movements'
-                const movementRef = doc(movementsCollectionRef); // Cria um novo doc com ID aleatório
-                batch.set(movementRef, {
-                    productId: productId,
-                    productName: product.name, // Salva o nome para facilitar relatórios
-                    quantityChanged: quantity,
-                    newQuantity: newQuantity, // Salva a nova quantidade total
-                    type: type,
-                    date: new Date()
-                });
+            // Re-renderiza as tabelas
+            renderStockTable(localProducts);
+            updateDashboard(localProducts);
 
-                await batch.commit();
-                console.log("Movimentação de estoque salva com sucesso!");
-                
+            setTimeout(() => { // Simula o tempo de salvar
                 closeModal(stockMovementModal);
                 stockMovementForm.reset();
-
-            } catch (error) {
-                console.error("Erro ao salvar movimentação:", error);
-                alert("Ocorreu um erro ao salvar: " + error.message);
-            } finally {
-                 submitButton.disabled = false;
-                 submitButton.textContent = "Salvar Movimentação";
-            }
+                submitButton.disabled = false;
+                submitButton.textContent = "Salvar Movimentação";
+            }, 500);
         });
     }
 }
 
-// --- Funções do Firebase ---
-
-async function handleAuthentication() {
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            userId = user.uid;
-        } else {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                userId = auth.currentUser.uid;
-            } catch (e) {
-                console.error("Erro na autenticação:", e);
-                userId = 'fallback-' + crypto.randomUUID();
-            }
-        }
-        
-        console.log("Autenticado com UserID:", userId);
-
-        // Define os caminhos das coleções
-        const basePath = `artifacts/${appId}/users/${userId}`;
-        productsCollectionRef = collection(db, `${basePath}/products`);
-        movementsCollectionRef = collection(db, `${basePath}/movements`);
-        
-        // Inicia os listeners
-        setupProductListener();
-    });
-}
-
 /**
- * Cria um "ouvinte" em tempo real para a coleção de produtos.
+ * LÓGICA NOVA: Controla o formulário dinâmico de Objeto/Tamanho
  */
-function setupProductListener() {
-    if (!productsCollectionRef) return;
+function setupDynamicFormLogic() {
+    if (prodObjectSelect) {
+        prodObjectSelect.addEventListener('change', () => {
+            const selection = prodObjectSelect.value;
+            prodSizeSelect.innerHTML = ''; // Limpa as opções
+            prodSizeSelect.disabled = true;
 
-    onSnapshot(query(productsCollectionRef), (snapshot) => {
-        const products = [];
-        snapshot.forEach((doc) => {
-            products.push({ id: doc.id, ...doc.data() });
+            let options = [];
+
+            if (selection === 'Calça' || selection === 'Bermuda') {
+                options = ['38', '40', '42'];
+                prodSizeSelect.disabled = false;
+            } else if (selection === 'Camisa') {
+                options = ['P', 'M', 'G'];
+                prodSizeSelect.disabled = false;
+            } else {
+                // Se for "Selecione um tipo"
+                options = ['Selecione um objeto primeiro'];
+            }
+
+            // Adiciona as novas opções
+            options.forEach(optionValue => {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.textContent = optionValue;
+                prodSizeSelect.appendChild(option);
+            });
         });
-        
-        // Ordena
-        products.sort((a, b) => {
-             // Tenta usar createdAt, mas usa name como fallback
-             if (a.createdAt && b.createdAt) {
-                 // Converte para data se for timestamp do Firebase
-                 const dateA = a.createdAt.toDate ? a.createdAt.toDate() : a.createdAt;
-                 const dateB = b.createdAt.toDate ? b.createdAt.toDate() : b.createdAt;
-                return dateB - dateA;
-             }
-             return a.name.localeCompare(b.name);
-        });
-
-        localProducts = products; // Atualiza o cache local
-        
-        // Atualiza todas as partes da UI que dependem dos produtos
-        renderProductTable(products);
-        renderStockTable(products);
-        populateProductSelect(products);
-        updateDashboard(products);
-
-    }, (error) => {
-        console.error("Erro ao escutar produtos:", error);
-        if (productTableBody) productTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Erro ao carregar produtos.</td></tr>';
-        if (stockTableBody) stockTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Erro ao carregar estoque.</td></tr>';
-    });
+    }
 }
 
 // --- Funções de Renderização (Helpers) ---
@@ -370,11 +316,11 @@ function renderProductTable(products) {
         row.className = 'hover:bg-slate-50';
         row.innerHTML = `
             <td class="p-4">${product.name}</td>
-            <td class="p-4">${product.category}</td>
+            <td class="p-4">${product.sexo}</td> <!-- Alterado -->
             <td class="p-4">${product.size}</td>
             <td class="p-4">${product.object}</td>
             <td class="p-4">
-                <button class="text-blue-600 hover:text-blue-800 font-medium mr-3">Editar</button>
+                <button class="edit-btn text-blue-600 hover:text-blue-800 font-medium mr-3" data-id="${product.id}">Editar</button>
                 <button class="delete-btn text-red-600 hover:text-red-800 font-medium" data-id="${product.id}">Excluir</button>
             </td>
         `;
@@ -393,14 +339,13 @@ function renderStockTable(products) {
 
     products.forEach(product => {
         const row = document.createElement('tr');
-        // Adiciona cor se o estoque estiver baixo
         const stockClass = product.quantity <= 10 ? 'text-red-600 font-bold' : '';
         row.className = 'hover:bg-slate-50';
         row.innerHTML = `
             <td class="p-4">${product.name}</td>
             <td class="p-4 ${stockClass}">${product.quantity}</td>
             <td class="p-4">${product.size}</td>
-            <td class="p-4">${product.category}</td>
+            <td class="p-4">${product.sexo}</td> <!-- Alterado -->
         `;
         stockTableBody.appendChild(row);
     });
@@ -410,10 +355,9 @@ function populateProductSelect(products) {
     const select = document.getElementById('movementProductSelect');
     if (!select) return;
     
-    // Salva o valor que estava selecionado
     const currentValue = select.value;
     
-    select.innerHTML = '<option value="">Selecione um produto...</option>'; // Placeholder
+    select.innerHTML = '<option value="">Selecione um produto...</option>'; 
     products.forEach(product => {
         const option = document.createElement('option');
         option.value = product.id;
@@ -421,27 +365,20 @@ function populateProductSelect(products) {
         select.appendChild(option);
     });
     
-    // Tenta recolocar o valor que estava selecionado
     select.value = currentValue;
 }
 
 function updateDashboard(products) {
     if (!dashboardTotalItems || !dashboardTotalValue) return;
 
-    // 1. Total de Itens
     const totalItems = products.reduce((sum, p) => sum + (p.quantity || 0), 0);
     dashboardTotalItems.textContent = totalItems;
 
-    // 2. Valor Total
     const totalValue = products.reduce((sum, p) => sum + ((p.quantity || 0) * (p.price || 0)), 0);
-    // Formata como moeda Brasileira
     dashboardTotalValue.textContent = totalValue.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL'
     });
-
-    // 3. Baixo Estoque (simples)
-    // (Ainda estático, mas você pode adicionar a lógica aqui)
 }
 
 function openModal(modalElement) {
@@ -478,7 +415,18 @@ function openMovementModal(type) {
     openModal(stockMovementModal);
 }
 
+/**
+ * Reseta o formulário dinâmico para o estado inicial
+ */
+function resetDynamicForm() {
+    if (prodSizeSelect) {
+        prodSizeSelect.innerHTML = '<option value="">Selecione um objeto primeiro</option>';
+        prodSizeSelect.disabled = true;
+    }
+}
+
 // --- Funções de Simulação (IA) ---
+// (Estas funções não precisam de banco de dados e permanecem iguais)
 
 function setupIASimulations() {
     const generateDescBtn = document.getElementById('generateDescBtn');
